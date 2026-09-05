@@ -1,0 +1,25 @@
+# User specific configuration
+config.ahk
+
+# User specific icons
+/icons/*
+!/icons/.gitkeep
+
+# Compiled AutoHotkey binaries
+*.exe
+
+# --- OS specific files ---
+Thumbs.db
+desktop.ini
+
+# --- VS Code ---
+.vscode/
+*.code-workspace
+
+# --- Local Environment ---
+.env
+.env.*
+!.env.example
+
+# Local temporary directories
+_*
