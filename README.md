@@ -4,7 +4,7 @@
 
 A lightweight classic-style Alt+Tab window switcher for Windows, implemented in **AutoHotkey v2**.
 
-It provides a compact icon-based interface inspired by the classic Windows XP Alt+Tab experience, with keyboard and mouse navigation, customizable appearance, window filtering, custom icon mappings, and multi-monitor support.
+It provides a compact icon-based interface inspired by the classic Windows XP Alt+Tab experience, with keyboard navigation, mouse controls, customizable appearance, window filtering, custom icon mappings, and multi-monitor support.
 
 ---
 
@@ -19,7 +19,7 @@ No giant thumbnails. No cinematic experience. Just `Alt+Tab`.
 ## Features
 
 - Classic thumbnail-free Alt+Tab interface with a compact icon grid.
-- Full keyboard and mouse navigation, including persistent `Ctrl+Alt+Tab` mode.
+- Full keyboard navigation and mouse click support, including persistent `Ctrl+Alt+Tab` mode.
 - Window filtering and dialog handling for modern Windows applications.
 - Customizable layout, colors, icons, and window exclusion rules.
 - Multi-monitor aware placement.
@@ -92,7 +92,6 @@ In normal mode, releasing `Alt` activates the selected window and closes the swi
 | `End` | Select the last window |
 | `Enter` / `Space` | Activate the selected window |
 | `Esc` | Cancel and close the switcher |
-| Mouse hover | Select the icon under the pointer |
 | Mouse click | Activate the clicked window |
 
 Arrow keys, `Home`, `End`, `Enter`, `Space`, and `Esc` work regardless of whether modifier keys such as `Ctrl`, `Shift`, or `Alt` are being held while the switcher is active.

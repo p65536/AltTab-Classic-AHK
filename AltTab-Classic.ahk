@@ -363,7 +363,6 @@ BuildAltTabGui() {
 
     altTabGui.Show("x" screenX " y" screenY " w" maxPanelWidth " h" totalHeight)
     guiActive := true
-    SetTimer(CheckHover, 50)
 }
 
 ; ------------------------------------------------------------------------------
@@ -395,32 +394,9 @@ UpdateHighlight() {
 ; ------------------------------------------------------------------------------
 ;  Mouse Interactions
 ; ------------------------------------------------------------------------------
-CheckHover() {
-    global selectedIndex
-    if (!guiActive || !IsSet(altTabGui))
-        return
-
-    MouseGetPos(,, &winHwnd, &ctrlHwnd, 2)
-    if (winHwnd != altTabGui.Hwnd || !ctrlHwnd)
-        return
-
-    for idx, win in targetWindows {
-        if (ctrlHwnd = win.ctrlHwnd) {
-            if (idx != selectedIndex) {
-                selectedIndex := idx
-                UpdateHighlight()
-            }
-            break
-        }
-    }
-}
-
 OnIconClick(idx, *) {
-    global selectedIndex
-    if (idx >= 1 && idx <= targetWindows.Length) {
-        selectedIndex := idx
-        FinishAltTab(targetWindows[selectedIndex].hwnd)
-    }
+    if (idx >= 1 && idx <= targetWindows.Length)
+        FinishAltTab(targetWindows[idx].hwnd)
 }
 
 ; ------------------------------------------------------------------------------
@@ -479,7 +455,6 @@ ForceModifierReset() {
 
 FinishAltTab(hWnd) {
     global guiActive, persistentAltTab
-    SetTimer(CheckHover, 0)
     if IsSet(altTabGui) && altTabGui is Gui
         altTabGui.Hide()
     guiActive := false
