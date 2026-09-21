@@ -88,10 +88,15 @@ glowBorder := unset, maskBorder := unset, titleLabel := unset
     persistentAltTab := false
 
     if (!guiActive) {
+        ; Capture the foreground window before showing the switcher,
+        ; because BuildAltTabGui() may change the active window.
+        foregroundHwnd := WinExist("A")
+
         BuildAltTabGui()
         if (targetWindows.Length = 0)
             return
-        selectedIndex := (targetWindows.Length > 1) ? 2 : 1
+
+        selectedIndex := GetInitialSelectionIndex(foregroundHwnd)
     } else {
         selectedIndex++
         if (selectedIndex > targetWindows.Length)
@@ -111,10 +116,15 @@ glowBorder := unset, maskBorder := unset, titleLabel := unset
     persistentAltTab := false
 
     if (!guiActive) {
+        ; Capture the foreground window before showing the switcher,
+        ; because BuildAltTabGui() may change the active window.
+        foregroundHwnd := WinExist("A")
+
         BuildAltTabGui()
         if (targetWindows.Length = 0)
             return
-        selectedIndex := targetWindows.Length
+
+        selectedIndex := GetInitialSelectionIndex(foregroundHwnd, true)
     } else {
         selectedIndex--
         if (selectedIndex < 1)
@@ -134,10 +144,15 @@ glowBorder := unset, maskBorder := unset, titleLabel := unset
     persistentAltTab := true
 
     if (!guiActive) {
+        ; Capture the foreground window before showing the switcher,
+        ; because BuildAltTabGui() may change the active window.
+        foregroundHwnd := WinExist("A")
+
         BuildAltTabGui()
         if (targetWindows.Length = 0)
             return
-        selectedIndex := (targetWindows.Length > 1) ? 2 : 1
+
+        selectedIndex := GetInitialSelectionIndex(foregroundHwnd)
     } else {
         selectedIndex++
         if (selectedIndex > targetWindows.Length)
@@ -402,6 +417,55 @@ OnIconClick(idx, *) {
 ; ------------------------------------------------------------------------------
 ;  Navigation Logic
 ; ------------------------------------------------------------------------------
+GetInitialSelectionIndex(foregroundHwnd, reverse := false) {
+    currentIndex := 0
+
+    if foregroundHwnd {
+        ; First try the foreground window itself.
+        for idx, win in targetWindows {
+            if (win.hwnd = foregroundHwnd) {
+                currentIndex := idx
+                break
+            }
+        }
+
+        ; An owned popup may be omitted from targetWindows while its root owner represents the application.
+        ; Resolve it to the same list entry used by the switcher.
+        if (!currentIndex) {
+            GA_ROOTOWNER := 3
+            rootOwner := DllCall(
+                "user32\GetAncestor",
+                "Ptr", foregroundHwnd,
+                "UInt", GA_ROOTOWNER,
+                "Ptr"
+            )
+
+            if (rootOwner && rootOwner != foregroundHwnd) {
+                for idx, win in targetWindows {
+                    if (win.hwnd = rootOwner) {
+                        currentIndex := idx
+                        break
+                    }
+                }
+            }
+        }
+    }
+
+    ; If the foreground window is outside the Alt+Tab target list (e.g. taskbar after Win+B),
+    ; there is no current ring position. Start from the first listed target for either direction.
+    ; Note that this is the topmost eligible window in Z-order, which may be an AlwaysOnTop window.
+    if (!currentIndex)
+        return 1
+
+    if reverse {
+        nextIndex := currentIndex - 1
+        return (nextIndex < 1) ? targetWindows.Length : nextIndex
+    }
+
+    nextIndex := currentIndex + 1
+    return (nextIndex > targetWindows.Length) ? 1 : nextIndex
+}
+
 NavigateIcons(direction) {
     global selectedIndex
     count := targetWindows.Length

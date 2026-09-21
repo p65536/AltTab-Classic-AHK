@@ -100,6 +100,12 @@ Arrow keys, `Home`, `End`, `Enter`, `Space`, and `Esc` work regardless of whethe
 
 ## Notes
 
+### Taskbar Focus
+
+When focus is moved outside the Alt+Tab window list, such as with `Win+B`, the switcher starts from the first eligible window in Z-order.
+
+As a result, if an Always-on-top window is present, `Alt+Tab` after `Win+B` may select that window even if another window was active before `Win+B`.
+
 ### Elevated Applications
 
 Due to Windows User Interface Privilege Isolation (UIPI), hotkeys may not respond when an application running as administrator is focused.
