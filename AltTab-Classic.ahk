@@ -474,29 +474,21 @@ DescribeWindow(hWnd) {
 GetInitialSelectionIndex(foregroundHwnd, reverse := false) {
     currentIndex := 0
 
-    if foregroundHwnd {
-        ; First try the foreground window itself.
+    ; An owned popup may be omitted from targetWindows while an owner represents the application.
+    ; Walk the owner chain and use the nearest listed window: the root owner itself may be a hidden
+    ; helper window (e.g. Delphi's TApplication window) that is never listed.
+    GW_OWNER := 4
+    hWnd := foregroundHwnd
+    loop 64 {  ; guard against a malformed owner cycle
+        if !hWnd
+            break
         for idx, win in targetWindows {
-            if (win.hwnd = foregroundHwnd) {
+            if (win.hwnd = hWnd) {
                 currentIndex := idx
-                break
+                break 2
             }
         }
-
-        ; An owned popup may be omitted from targetWindows while its root owner represents the application.
-        ; Resolve it to the same list entry used by the switcher.
-        if (!currentIndex) {
-            rootOwner := GetRootOwner(foregroundHwnd)
-
-            if (rootOwner != foregroundHwnd) {
-                for idx, win in targetWindows {
-                    if (win.hwnd = rootOwner) {
-                        currentIndex := idx
-                        break
-                    }
-                }
-            }
-        }
+        hWnd := DllCall("user32\GetWindow", "Ptr", hWnd, "UInt", GW_OWNER, "Ptr")
     }
 
     ; If the foreground window is outside the Alt+Tab target list (e.g. taskbar after Win+B),
