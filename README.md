@@ -93,6 +93,7 @@ In normal mode, releasing `Alt` activates the selected window and closes the swi
 | `Enter` / `Space` | Activate the selected window |
 | `Esc` | Cancel and close the switcher |
 | Mouse click | Activate the clicked window |
+| Mouse right-click | Copy the clicked window's exclusion rule snippet and diagnostics to the clipboard |
 
 Arrow keys, `Home`, `End`, `Enter`, `Space`, and `Esc` work regardless of whether modifier keys such as `Ctrl`, `Shift`, or `Alt` are being held while the switcher is active.
 

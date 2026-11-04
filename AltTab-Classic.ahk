@@ -248,7 +248,7 @@ BuildAltTabGui() {
         try {
             windowTitle := WinGetTitle(hWnd)
 
-            ; If the window has no title (e.g. IrfanView fullscreen), inherit title from owner
+            ; If the window has no title, inherit title from owner
             if (windowTitle == "") {
                 GW_OWNER := 4
                 hOwner := DllCall("user32\GetWindow", "Ptr", hWnd, "UInt", GW_OWNER, "Ptr")
@@ -297,6 +297,7 @@ BuildAltTabGui() {
     altTabGui.BackColor := panelColor
     altTabGui.MarginX := 0
     altTabGui.MarginY := 0
+    altTabGui.OnEvent("ContextMenu", OnIconContextMenu)
 
     glowBorder := altTabGui.Add("Progress", "x0 y0 w" highlightSize " h" highlightSize " -Smooth Background" highlightColor " -Border Hidden Disabled")
     innerSize := iconSize + 2 * highlightGap
@@ -414,6 +415,59 @@ OnIconClick(idx, *) {
         FinishAltTab(targetWindows[idx].hwnd)
 }
 
+; Right-click an icon: copy an excludedRules snippet and window diagnostics to the clipboard.
+; No menu is shown, because releasing Alt during a modal menu would close the switcher.
+OnIconContextMenu(guiObj, ctrlObj, *) {
+    if !ctrlObj
+        return
+    for win in targetWindows {
+        if (win.ctrlHwnd != ctrlObj.Hwnd)
+            continue
+
+        try A_Clipboard := GetWindowDiagnostics(win)
+        catch {
+            ToolTip("Window no longer exists")
+            SetTimer(() => ToolTip(), -2000)
+            return
+        }
+        ToolTip("Copied window info: " win.process " / " win.class)
+        SetTimer(() => ToolTip(), -2000)
+        return
+    }
+}
+
+GetWindowDiagnostics(win) {
+    GW_OWNER := 4
+    hOwner    := DllCall("user32\GetWindow", "Ptr", win.hwnd, "UInt", GW_OWNER, "Ptr")
+    rootOwner := GetRootOwner(win.hwnd)
+    lastPopup := DllCall("user32\GetLastActivePopup", "Ptr", rootOwner, "Ptr")
+
+    title := StrReplace(win.title, "``", "````")
+    title := StrReplace(title, '"', '``"')
+    title := StrReplace(title, "`r", "``r")
+    title := StrReplace(title, "`n", "``n")
+    text := '{Exe: "' win.process '", Class: "' win.class '", Title: "' title '"},`r`n'
+    text .= Format("; hwnd: 0x{:X}  style: 0x{:08X}  exStyle: 0x{:08X}`r`n"
+        , win.hwnd, WinGetStyle(win.hwnd), WinGetExStyle(win.hwnd))
+    text .= "; owner:     " DescribeWindow(hOwner) "`r`n"
+    text .= "; rootOwner: " (rootOwner = win.hwnd ? "(self)" : DescribeWindow(rootOwner)) "`r`n"
+    text .= "; lastActivePopup(rootOwner): " (lastPopup = win.hwnd ? "(self)" : DescribeWindow(lastPopup)) "`r`n"
+    return text
+}
+
+DescribeWindow(hWnd) {
+    if !hWnd
+        return "(none)"
+    try {
+        return Format('0x{:X}  {}  "{}"  visible: {}  exStyle: 0x{:08X}  title: "{}"'
+            , hWnd, WinGetProcessName(hWnd), WinGetClass(hWnd)
+            , DllCall("user32\IsWindowVisible", "Ptr", hWnd) ? "yes" : "no"
+            , WinGetExStyle(hWnd), WinGetTitle(hWnd))
+    } catch {
+        return Format("0x{:X}  (inaccessible)", hWnd)
+    }
+}
+
 ; ------------------------------------------------------------------------------
 ;  Navigation Logic
 ; ------------------------------------------------------------------------------
@@ -432,15 +486,9 @@ GetInitialSelectionIndex(foregroundHwnd, reverse := false) {
         ; An owned popup may be omitted from targetWindows while its root owner represents the application.
         ; Resolve it to the same list entry used by the switcher.
         if (!currentIndex) {
-            GA_ROOTOWNER := 3
-            rootOwner := DllCall(
-                "user32\GetAncestor",
-                "Ptr", foregroundHwnd,
-                "UInt", GA_ROOTOWNER,
-                "Ptr"
-            )
+            rootOwner := GetRootOwner(foregroundHwnd)
 
-            if (rootOwner && rootOwner != foregroundHwnd) {
+            if (rootOwner != foregroundHwnd) {
                 for idx, win in targetWindows {
                     if (win.hwnd = rootOwner) {
                         currentIndex := idx
@@ -595,6 +643,19 @@ GetWindowIcon(hWnd, preferBigIcon := 0) {
 ; ------------------------------------------------------------------------------
 ;  Alt+Tab Target Window Verification
 ; ------------------------------------------------------------------------------
+; GetAncestor(GA_ROOTOWNER) follows GetParent, which skips owners of non-WS_POPUP windows
+; (e.g. Lazarus/Cheat Engine forms owned by the visible application window). Walk GW_OWNER instead.
+GetRootOwner(hWnd) {
+    GW_OWNER := 4
+    loop 64 {  ; guard against a malformed owner cycle
+        hOwner := DllCall("user32\GetWindow", "Ptr", hWnd, "UInt", GW_OWNER, "Ptr")
+        if !hOwner
+            break
+        hWnd := hOwner
+    }
+    return hWnd
+}
+
 IsAltTabWindow(hWnd) {
     if !(DllCall("user32\GetDesktopWindow", "Ptr") = DllCall("user32\GetAncestor", "Ptr", hWnd, "UInt", 1, "Ptr"))
         return false
@@ -635,11 +696,10 @@ IsAltTabWindow(hWnd) {
     ; Windows Shell Rule:
     ; A window must not be an owned/child window unless it has WS_EX_APPWINDOW.
     ; If the root owner is visible, this dependent window must be excluded.
-    ; If the root owner is hidden (e.g. IrfanView fullscreen mode), admit this window as the visible proxy.
+    ; If the root owner is hidden, admit this window as the visible proxy.
     if !(exStyle & WS_EX_APPWINDOW) {
-        GA_ROOTOWNER := 3
-        rootOwner := DllCall("user32\GetAncestor", "Ptr", hWnd, "UInt", GA_ROOTOWNER, "Ptr")
-        if (rootOwner && rootOwner != hWnd && DllCall("user32\IsWindowVisible", "Ptr", rootOwner))
+        rootOwner := GetRootOwner(hWnd)
+        if (rootOwner != hWnd && DllCall("user32\IsWindowVisible", "Ptr", rootOwner))
             return false
     }
 

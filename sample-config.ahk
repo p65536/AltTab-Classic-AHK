@@ -72,10 +72,13 @@ customIcons := Map(
 ;
 ; All specified properties within a rule must match.
 ; A window is excluded if any rule matches.
+;
+; Tip: Right-click an icon in the switcher to copy a ready-to-paste rule
+;      (plus owner/style diagnostics) for that window to the clipboard.
 ; ------------------------------------------------------------------------------
 excludedRules := [
-    ; [Pattern 1] Exe + Class (Recommended for mode-specific sub-screens)
-    ; {Exe: "i_view64.exe", Class: "FullScreenClass"},  ; IrfanView fullscreen
+    ; [Pattern 1] Exe + Class (Recommended for a specific sub-window of an app)
+    ; {Exe: "example.exe", Class: "ExampleSubWindowClass"},
 
     ; [Pattern 2] Exe + Substring Title (e.g. Exclude private browsing windows)
     ; {Exe: "msedge.exe", Title: "InPrivate"},
@@ -88,7 +91,4 @@ excludedRules := [
 
     ; [Pattern 5] Exe Only (Matches all windows belonging to this process)
     ; {Exe: "ApplicationFrameHost.exe"}
-
-    ; Applications that you prefer to hide from the switcher
-    ; {Exe: "firefox.exe", Class: "MozillaDialogClass"}, ; Firefox Picture-in-Picture
 ]
