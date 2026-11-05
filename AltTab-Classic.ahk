@@ -559,11 +559,14 @@ ForceModifierReset() {
 
 FinishAltTab(hWnd) {
     global guiActive, persistentAltTab
-    if IsSet(altTabGui) && altTabGui is Gui
-        altTabGui.Hide()
+    SetWinDelay(-1)  ; skip the default 100ms post-activation wait so the GUI hides promptly
     guiActive := false
     persistentAltTab := false
     ForceModifierReset()
+
+    ; Make the GUI invisible while it stays active; no restore needed since it is recreated on each show
+    if IsSet(altTabGui) && altTabGui is Gui
+        try WinSetTransparent(0, altTabGui)
 
     if (hWnd && WinExist(hWnd)) {
         ; If the window owns an active modal popup (e.g. Save As), activate the popup instead
@@ -573,6 +576,11 @@ FinishAltTab(hWnd) {
 
         try WinActivate(targetHwnd)
     }
+
+    ; Hide after activating: hiding the active GUI first makes Windows asynchronously
+    ; activate the previous window, which can be raised above the target afterwards
+    if IsSet(altTabGui) && altTabGui is Gui
+        altTabGui.Hide()
 }
 
 ; ------------------------------------------------------------------------------
