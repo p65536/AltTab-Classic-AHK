@@ -91,4 +91,7 @@ excludedRules := [
 
     ; [Pattern 5] Exe Only (Matches all windows belonging to this process)
     ; {Exe: "ApplicationFrameHost.exe"}
+
+    ; Applications that you prefer to hide from the switcher
+    ; {Exe: "firefox.exe", Class: "MozillaDialogClass"}, ; Firefox Picture-in-Picture
 ]
